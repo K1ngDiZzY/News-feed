@@ -1,0 +1,7 @@
+requests~=2.32.3
+discord.py
+feedparser~=6.0.11
+python-dotenv~=1.0.1
+schedule~=1.2.2
+django-scheduler~=0.10.1
+discord-webhook~=1.4.1

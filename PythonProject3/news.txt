@@ -1,0 +1,16 @@
+
+
+bleepingcomputer:
+
+
+TheHackerNews_home:
+Title: Coinbase Initially Targeted in GitHub Actions Supply Chain Attack; 218 Repositories' CI/CD Secrets Exposed
+Link: https://thehackernews.com/2025/03/github-supply-chain-breach-coinbase.html
+Date: Sun, 23 Mar 2025 10:56:00 +0530
+
+
+
+bleepingcomputer:
+
+
+TheHackerNews_home:
