@@ -9,7 +9,6 @@ from datetime import datetime
 def main():
     news = NewsFeed()
 
-
     # Get today's date
     today = datetime.now().date()
     print(f"Today's date: {today}")
