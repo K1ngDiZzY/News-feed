@@ -5,8 +5,6 @@ import schedule
 import time
 from datetime import datetime
 
-# Schedule the clear_file function to run at 11:59 p.m. every day
-schedule.every().day.at("23:59").do(clear_file)
 
 def main():
     news = NewsFeed()
