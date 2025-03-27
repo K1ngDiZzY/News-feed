@@ -30,5 +30,8 @@ def main():
 
     news.save_to_file()
 
+    # Schedule the clear_file function to run at 11:59 PM
+    schedule.every().day.at("23:59").do(clear_file)
+
 if __name__ == "__main__":
     main()
