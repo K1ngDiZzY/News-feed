@@ -1,5 +1,3 @@
-from webhook import webhook
-import requests
 from datetime import datetime
 import feedparser
 from srcs import hacking_rss_list
@@ -25,7 +23,6 @@ class NewsFeed:
     def __init__(self):
         self.news = {}
         self.get_news()
-
 
     def get_news(self):
         for key, value in hacking_rss_list.items():
@@ -56,10 +53,7 @@ class NewsFeed:
                         seen_entries.add(entry_key)
 
 
-
-
 # Clear the file
 def clear_file(filename='news.txt'):
     with open(filename, 'w', encoding='utf-8') as file:
         file.write('')
-
