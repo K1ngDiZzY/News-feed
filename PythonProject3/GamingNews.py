@@ -1,31 +1,47 @@
-from bs4 import BeautifulSoup
-import requests
-from datetime import datetime
-from srcs import game_news_list
-from urllib.parse import urljoin
+from __future__ import annotations
+
+from dataclasses import dataclass, asdict
+from datetime import date, datetime
+from typing import Dict, List, Optional, Set, Tuple
+import json
+import logging
 import re
 
+import requests
+from bs4 import BeautifulSoup
+from dateutil import parser as dateparser  # add python-dateutil to requirements
+from urllib.parse import urljoin
 
-def _parse_date_string(date_text):
+from srcs import game_news_list
+
+logger = logging.getLogger(__name__)
+SESSION = requests.Session()
+
+
+@dataclass(frozen=True)
+class GameEntry:
+    title: str
+    link: str
+    date: date
+
+    def to_dict(self) -> Dict:
+        d = asdict(self)
+        d['date'] = self.date.isoformat()
+        return d
+
+
+def _parse_date_string(date_text: Optional[str]) -> Optional[date]:
     if not date_text:
         return None
     s = date_text.strip()
-    # common format like 'November 13, 2025'
+    # Try dateutil first (covers most formats)
     try:
-        return datetime.strptime(s, '%B %d, %Y').date()
+        dt = dateparser.parse(s, fuzzy=True)
+        if dt:
+            return dt.date()
     except Exception:
         pass
-    # try abbreviated month 'Nov 13, 2025'
-    try:
-        return datetime.strptime(s, '%b %d, %Y').date()
-    except Exception:
-        pass
-    # try ISO
-    try:
-        return datetime.fromisoformat(s).date()
-    except Exception:
-        pass
-    # try to extract yyyy-mm-dd
+    # Fallback: extract YYYY-MM-DD
     m = re.search(r'(\d{4}-\d{2}-\d{2})', s)
     if m:
         try:
@@ -35,133 +51,119 @@ def _parse_date_string(date_text):
     return None
 
 
-def get_existing_game_entries(filename='gamenews.txt'):
-    existing_entries = set()
+def _sanitize_text(html: str) -> str:
+    return BeautifulSoup(html or '', 'html.parser').get_text(separator=' ', strip=True)
+
+
+def load_seen(filename: str = 'gamenews_seen.json') -> Set[Tuple[str, str]]:
     try:
-        with open(filename, 'r', encoding='utf-8') as file:
-            lines = file.readlines()
-            for i in range(len(lines)):
-                if lines[i].startswith('Title: '):
-                    title = lines[i].strip().split('Title: ')[1]
-                    if i + 2 < len(lines) and lines[i + 2].startswith('Date: '):
-                        date_str = lines[i + 2].strip().split('Date: ')[1]
-                        try:
-                            entry_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-                        except Exception:
-                            try:
-                                entry_date = datetime.fromisoformat(date_str).date()
-                            except Exception:
-                                entry_date = None
-                        existing_entries.add((title, entry_date))
+        with open(filename, 'r', encoding='utf-8') as fh:
+            data = json.load(fh)
+        return {(item['title'], item['link']) for item in data}
     except FileNotFoundError:
-        pass
-    return existing_entries
+        return set()
+    except Exception:
+        logger.exception("Failed to load seen game entries, starting empty.")
+        return set()
+
+
+def save_seen(seen: Set[Tuple[str, str]], filename: str = 'gamenews_seen.json') -> None:
+    payload = [{'title': t, 'link': l} for t, l in sorted(seen)]
+    try:
+        with open(filename, 'w', encoding='utf-8') as fh:
+            json.dump(payload, fh, indent=2, ensure_ascii=False)
+    except Exception:
+        logger.exception("Failed to save seen game entries.")
 
 
 class NewsFeed:
-    def __init__(self):
-        self.news = {}
-        self.get_news()
+    def __init__(self, source_key: str = 'arcraiders'):
+        self.source_key = source_key
+        self.url = game_news_list.get(source_key)
+        self.news: List[GameEntry] = []
 
-    def get_news(self):
-        url = game_news_list.get('arcraiders')
-        entries = []
-        if not url:
-            self.news['arcraiders'] = entries
+    def fetch(self, timeout: int = 15) -> None:
+        self.news = []
+        if not self.url:
+            logger.warning("No URL configured for %s", self.source_key)
             return
+
         try:
-            resp = requests.get(url, timeout=15)
+            resp = SESSION.get(self.url, timeout=timeout)
             resp.raise_for_status()
-        except Exception as e:
-            print(f'Failed to fetch Arc Raiders news page: {e}')
-            self.news['arcraiders'] = entries
+        except Exception:
+            logger.exception("Failed to fetch %s", self.url)
             return
 
         soup = BeautifulSoup(resp.text, 'html.parser')
-        cards = soup.select('a[class*="news-article-card_container"]')
+        # Try structured news cards first
+        cards = soup.select('a[class*="news-article-card_container"]') or []
         if not cards:
-            # fallback: look for anchor list
+            # Generic fallback: top anchors under main/content
             main = soup.find('main') or soup.find(id='content') or soup
-            cards = main.find_all('a')[:30]
+            cards = main.find_all('a')[:50]
 
+        entries: List[GameEntry] = []
         for card in cards:
             try:
-                # if it's a card with structured fields
+                # Structured card path
                 title_el = card.select_one('[class*="news-article-card_title"]')
                 date_el = card.select_one('[class*="news-article-card_date"]')
                 if title_el and date_el and card.get('href'):
-                    title = title_el.get_text().strip()
+                    title = _sanitize_text(title_el.get_text())
                     link = card.get('href')
                     if link.startswith('/'):
-                        link = urljoin(url, link)
-                    date_obj = _parse_date_string(date_el.get_text())
-                    if not date_obj:
-                        # skip if date not parseable
-                        continue
-                    entries.append({'title': title, 'link': link, 'date': date_obj.isoformat()})
+                        link = urljoin(self.url, link)
+                    parsed = _parse_date_string(date_el.get_text())
+                    if parsed:
+                        entries.append(GameEntry(title=title, link=link, date=parsed))
                     continue
             except Exception:
-                pass
+                logger.debug("Structured card parse failed for one card.", exc_info=True)
 
-            # generic fallback for anchors
+            # Generic anchor path
             try:
                 a = card if card.name == 'a' else card.find('a')
                 if not a or not a.get('href'):
                     continue
-                title = (a.get_text() or a.get('title') or '').strip()
+                title = _sanitize_text(a.get_text() or a.get('title') or '')
                 link = a.get('href')
                 if link.startswith('/'):
-                    link = urljoin(url, link)
-                # try to find nearby date text
+                    link = urljoin(self.url, link)
+                # Look for nearby time tags or date-like nodes
                 date_text = None
                 time_tag = card.find('time') if hasattr(card, 'find') else None
                 if time_tag:
                     date_text = time_tag.get('datetime') or time_tag.get_text()
                 else:
-                    # look for child with 'date' in class
-                    p = card.select_one('[class*=date]')
+                    p = card.select_one('[class*=date]') or card.find('span', string=re.compile(r'\d{4}'))
                     if p:
                         date_text = p.get_text()
-                date_obj = _parse_date_string(date_text) if date_text else None
-                if not date_obj:
-                    continue
-                entries.append({'title': title, 'link': link, 'date': date_obj.isoformat()})
+                parsed = _parse_date_string(date_text) if date_text else None
+                if parsed:
+                    entries.append(GameEntry(title=title, link=link, date=parsed))
             except Exception:
-                continue
+                logger.debug("Generic card parse failed for one card.", exc_info=True)
 
-        # deduplicate by (title,link)
-        seen = set()
-        unique = []
+        # Deduplicate by (title, link), prefer newest date
+        seen_keys: Dict[Tuple[str, str], GameEntry] = {}
         for e in entries:
-            key = (e['title'], e['link'])
-            if key in seen:
-                continue
-            seen.add(key)
-            unique.append(e)
+            key = (e.title, e.link)
+            existing = seen_keys.get(key)
+            if not existing or e.date > existing.date:
+                seen_keys[key] = e
 
-        # sort by date desc
-        unique.sort(key=lambda x: x['date'], reverse=True)
-        self.news['arcraiders'] = unique
+        # Sort by date desc
+        self.news = sorted(seen_keys.values(), key=lambda e: e.date, reverse=True)
 
-    def save_to_file(self, filename='gamenews.txt'):
-        seen_entries = get_existing_game_entries(filename)
-        with open(filename, 'a', encoding='utf-8') as file:
-            file.write('\n\narcraiders:\n')
-            for entry in self.news.get('arcraiders', []):
-                try:
-                    entry_date = datetime.fromisoformat(entry['date']).date()
-                except Exception:
-                    continue
-                entry_key = (entry['title'], entry['link'])
-                if entry_key not in seen_entries:
-                    file.write(f"Title: {entry['title']}\n")
-                    file.write(f"Link: {entry['link']}\n")
-                    file.write(f"Date: {entry['date']}\n")
-                    file.write('\n')
-                    seen_entries.add(entry_key)
+    def new_entries_since_today(self, seen_file: str = 'gamenews_seen.json') -> List[GameEntry]:
+        seen = load_seen(seen_file)
+        today = date.today()
+        new = [e for e in self.news if (e.title, e.link) not in seen and e.date == today]
+        return new
 
-
-# Clear the file
-def clear_file(filename='gamenews.txt'):
-    with open(filename, 'w', encoding='utf-8') as file:
-        file.write('')
+    def mark_as_seen(self, entries: List[GameEntry], seen_file: str = 'gamenews_seen.json') -> None:
+        seen = load_seen(seen_file)
+        for e in entries:
+            seen.add((e.title, e.link))
+        save_seen(seen, seen_file)
