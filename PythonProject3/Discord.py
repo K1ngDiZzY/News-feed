@@ -1,34 +1,18 @@
 from __future__ import annotations
 
-from typing import Dict
-import logging
+from discord_webhook import DiscordWebhook
 import requests
+import json
 
-logger = logging.getLogger(__name__)
-SESSION = requests.Session()
+def SendToDiscord(webhook, entry):
+    content = f"**{entry['title']}**\n{entry['link']}\nPublished on: {entry['date']}"
 
+    data = {
+        "content": content
+    }
 
-def send_to_discord(webhook_url: str, content: str, timeout: int = 10) -> bool:
-    if not webhook_url:
-        logger.warning("Empty webhook URL provided.")
-        return False
-    payload = {"content": content}
-    headers = {"Content-Type": "application/json"}
-    try:
-        resp = SESSION.post(webhook_url, json=payload, headers=headers, timeout=timeout)
-        if 200 <= resp.status_code < 300:
-            logger.debug("Discord webhook sent (status %s).", resp.status_code)
-            return True
-        logger.warning("Discord webhook failed: status=%s body=%s", resp.status_code, resp.text)
-        return False
-    except requests.RequestException:
-        logger.exception("Failed to send webhook to Discord.")
-        return False
-
-
-def format_entry_for_discord(entry: Dict) -> str:
-    # Expect entry to have title, link and date/published
-    title = entry.get('title', '').strip()
-    link = entry.get('link', '').strip()
-    date = entry.get('date') or entry.get('published') or ''
-    return f"**{title}**\n{link}\nPublished on: {date}"
+    response = requests.post(webhook, json=data)
+    if response.status_code != 204:
+        print(f"Failed to send the message to Discord. Status code: {response.status_code}")
+    else:
+        print("Message sent successfully to Discord!")
