@@ -3,7 +3,7 @@ from __future__ import annotations
 from webhook import webhook
 from HackingNews import NewsFeed, clear_file, get_existing_entries
 from Discord import SendToDiscord
-
+from GamingNews import ArcRaidersNews, get_existing_entries as get_game_existing_entries
 from datetime import datetime
 
 
@@ -30,6 +30,35 @@ def main():
                 existing_entries.add(entry_key)
 
     news.save_to_file()
+
+    # --- Game news section ---
+    game_news = ArcRaidersNews()
+    # Fetch HTML from the Arc Raiders news page
+    import requests
+    try:
+        response = requests.get(game_news.base_url)
+        response.raise_for_status()
+        html = response.text
+        game_news.get_news(html)
+    except Exception as e:
+        print(f"Failed to fetch game news: {e}")
+
+    game_existing_entries = get_game_existing_entries()
+    print(f"Existing game entries: {game_existing_entries}")
+
+    for article in game_news.news:
+        try:
+            article_date = datetime.strptime(article['date'], '%B %d, %Y').date()
+        except Exception:
+            print(f"Could not parse date for article: {article}")
+            continue
+        article_key = article['link']
+        print(f"Checking game entry: (Title: {article['title']}, Date: {article_date}, Link: {article_key})")
+        if article_date == today and article_key not in game_existing_entries:
+            print(f"Sending game article to Discord: {article_key}")
+            SendToDiscord(webhook["arcraiders"], article)
+
+    game_news.save_to_file()
 
 if __name__ == "__main__":
     main()
