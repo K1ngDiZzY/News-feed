@@ -8,7 +8,7 @@ load_dotenv()
 # this is where you would put your specific webhook url
 get_hackerNews = os.getenv("HACKERNEWS")
 get_devNews = os.getenv("DEVNEWS")
-get_arcRaiderNews = os.getenv("ARCRAIDERNEWS")
+get_arcRaiderNews = os.getenv("ARCRAIDERS")
 
 webhook = {
         'hackerNews': f"{get_hackerNews}",

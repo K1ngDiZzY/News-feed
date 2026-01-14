@@ -12,6 +12,7 @@ def main():
 
     # Get today's date
     today = datetime.now().date()
+
     print(f"Today's date: {today}")
 
     # Get existing entries from the news.txt file
@@ -36,7 +37,7 @@ def main():
     # Fetch HTML from the Arc Raiders news page
     import requests
     try:
-        response = requests.get(game_news.base_url)
+        response = requests.get(f"{game_news.base_url}/news")
         response.raise_for_status()
         html = response.text
         game_news.get_news(html)
@@ -56,7 +57,7 @@ def main():
         print(f"Checking game entry: (Title: {article['title']}, Date: {article_date}, Link: {article_key})")
         if article_date == today and article_key not in game_existing_entries:
             print(f"Sending game article to Discord: {article_key}")
-            SendToDiscord(webhook["arcraiders"], article)
+            SendToDiscord(webhook["arcRaiderNews"], article)
 
     game_news.save_to_file()
 

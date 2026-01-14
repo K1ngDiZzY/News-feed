@@ -1,8 +1,7 @@
 from __future__ import annotations
-
-from datetime import datetime
-from srcs import game_news_list
 from bs4 import BeautifulSoup
+from srcs import game_news_list
+
 
 def get_existing_entries(filename='arc_raiders_news.txt'):
     existing_entries = set()
@@ -48,6 +47,7 @@ class ArcRaidersNews:
     def save_to_file(self, filename='arc_raiders_news.txt'):
         from datetime import datetime
         current_date = datetime.now().date()
+
         seen_entries = get_existing_entries(filename)
         with open(filename, 'a', encoding='utf-8') as f:  # Append mode
             for article in self.news:
