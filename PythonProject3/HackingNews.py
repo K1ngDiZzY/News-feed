@@ -1,7 +1,4 @@
 from __future__ import annotations
-
-from webhook import webhook
-import requests
 from datetime import datetime
 import feedparser
 from srcs import hacking_rss_list
