@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from webhook import webhook
-from HackingNews import NewsFeed, clear_file, get_existing_entries
+from datetime import datetime
+
+import requests
+
 from Discord import SendToDiscord
 from GamingNews import ArcRaidersNews, get_existing_entries as get_game_existing_entries
-from datetime import datetime
+from HackingNews import NewsFeed, get_existing_entries
+from LeagueNews import LeagueNews, get_existing_entries as get_league_existing_entries
+from webhook import webhook
 
 
 def main():
@@ -35,7 +39,6 @@ def main():
     # --- Game news section ---
     game_news = ArcRaidersNews()
     # Fetch HTML from the Arc Raiders news page
-    import requests
     try:
         response = requests.get(f"{game_news.base_url}/news")
         response.raise_for_status()
@@ -50,7 +53,7 @@ def main():
     for article in game_news.news:
         try:
             article_date = datetime.strptime(article['date'], '%B %d, %Y').date()
-        except Exception:
+        except Exception as article:
             print(f"Could not parse date for article: {article}")
             continue
         article_key = article['link']
@@ -60,6 +63,33 @@ def main():
             SendToDiscord(webhook["arcRaiderNews"], article)
 
     game_news.save_to_file()
+
+    # --- League of Legends patch notes section ---
+    league_news = LeagueNews()
+    try:
+        response = requests.get(league_news.feed_url)
+        response.raise_for_status()
+        league_news.get_news(response.text)
+    except Exception as e:
+        print(f"Failed to fetch League news: {e}")
+
+    league_existing_entries = get_league_existing_entries()
+    print(f"Existing League entries: {league_existing_entries}")
+
+    for article in league_news.news:
+        try:
+            article_date = datetime.strptime(article['date'], '%B %d, %Y').date()
+        except Exception as article:
+            print(f"Could not parse date for article: {article}")
+            continue
+        article_key = article['link']
+        print(f"Checking League entry: (Title: {article['title']}, Date: {article_date}, Link: {article_key})")
+        if article_date == today and article_key not in league_existing_entries:
+            print(f"Sending League article to Discord: {article_key}")
+            SendToDiscord(webhook["leagueNews"], article)
+
+    league_news.save_to_file()
+
 
 if __name__ == "__main__":
     main()
