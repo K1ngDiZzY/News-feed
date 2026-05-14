@@ -4,5 +4,6 @@ hacking_rss_list = {
 }
 
 game_news_list = {
-    'arcraiders': 'https://arcraiders.com'
+    'arcraiders': 'https://arcraiders.com',
+    'leagueoflegends': 'https://www.leagueoflegends.com'
 }

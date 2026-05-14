@@ -9,9 +9,11 @@ load_dotenv()
 get_hackerNews = os.getenv("HACKERNEWS")
 get_devNews = os.getenv("DEVNEWS")
 get_arcRaiderNews = os.getenv("ARCRAIDERS")
+get_leagueNews = os.getenv("LEAGUEOFLEGENDS")
 
 webhook = {
-        'hackerNews': f"{get_hackerNews}",
-        'devNews': f"{get_devNews}",
-        'arcRaiderNews': f"{get_arcRaiderNews}"
-    }
+    'hackerNews': f"{get_hackerNews}",
+    'devNews': f"{get_devNews}",
+    'arcRaiderNews': f"{get_arcRaiderNews}",
+    'leagueNews': f"{get_leagueNews}"
+}
