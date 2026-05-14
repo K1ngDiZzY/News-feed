@@ -53,7 +53,7 @@ def main():
     for article in game_news.news:
         try:
             article_date = datetime.strptime(article['date'], '%B %d, %Y').date()
-        except Exception as article:
+        except Exception as e:
             print(f"Could not parse date for article: {article}")
             continue
         article_key = article['link']
@@ -79,7 +79,7 @@ def main():
     for article in league_news.news:
         try:
             article_date = datetime.strptime(article['date'], '%B %d, %Y').date()
-        except Exception as article:
+        except Exception as e:
             print(f"Could not parse date for article: {article}")
             continue
         article_key = article['link']
