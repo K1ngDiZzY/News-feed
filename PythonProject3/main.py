@@ -4,6 +4,7 @@ from datetime import datetime
 
 import requests
 
+from ApexNews import ApexNews, get_existing_entries as get_apex_existing_entries
 from Discord import SendToDiscord
 from GamingNews import ArcRaidersNews, get_existing_entries as get_game_existing_entries
 from HackingNews import NewsFeed, get_existing_entries
@@ -89,6 +90,32 @@ def main():
             SendToDiscord(webhook["leagueNews"], article)
 
     league_news.save_to_file()
+
+    # --- Apex Legends news section ---
+    apex_news = ApexNews()
+    try:
+        response = requests.get(apex_news.feed_url)
+        response.raise_for_status()
+        apex_news.get_news(response.text)
+    except Exception as e:
+        print(f"Failed to fetch Apex Legends news: {e}")
+
+    apex_existing_entries = get_apex_existing_entries()
+    print(f"Existing Apex entries: {apex_existing_entries}")
+
+    for article in apex_news.news:
+        try:
+            article_date = datetime.strptime(article['date'], '%B %d, %Y').date()
+        except Exception as e:
+            print(f"Invalid or missing date format for Apex article: {article}")
+            continue
+        article_key = article['link']
+        print(f"Checking Apex entry: (Title: {article['title']}, Date: {article_date}, Link: {article_key})")
+        if article_date == today and article_key not in apex_existing_entries:
+            print(f"Sending Apex article to Discord: {article_key}")
+            SendToDiscord(webhook["apexNews"], article)
+
+    apex_news.save_to_file()
 
 
 if __name__ == "__main__":
