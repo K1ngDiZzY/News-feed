@@ -1,8 +1,6 @@
 from __future__ import annotations
-
-from discord_webhook import DiscordWebhook
 import requests
-import json
+
 
 def SendToDiscord(webhook, entry):
     content = f"**{entry['title']}**\n{entry['link']}\nPublished on: {entry['date']}"

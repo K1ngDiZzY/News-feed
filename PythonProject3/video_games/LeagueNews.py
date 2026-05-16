@@ -2,20 +2,7 @@ from __future__ import annotations
 from bs4 import BeautifulSoup
 from datetime import datetime
 from srcs import game_news_list
-
-
-def get_existing_entries(filename='league_news.txt'):
-    existing_entries = set()
-    try:
-        with open(filename, 'r', encoding='utf-8') as file:
-            for line in file:
-                if line.startswith("Link: "):
-                    url = line[len("Link: "):].strip()
-                    if url:
-                        existing_entries.add(url)
-    except FileNotFoundError:
-        pass
-    return existing_entries
+from utils import get_existing_entries
 
 
 class LeagueNews:
@@ -33,7 +20,7 @@ class LeagueNews:
         articles = []
 
         for a in soup.find_all('a', attrs={'data-testid': 'articlefeaturedcard-component'}):
-            href = a.get('href', '')
+            href = str(a.get('href', ''))
             if not href:
                 continue
 

@@ -1,21 +1,7 @@
 from __future__ import annotations
 from bs4 import BeautifulSoup
 from srcs import game_news_list
-
-
-def get_existing_entries(filename='arc_raiders_news.txt'):
-    existing_entries = set()
-    try:
-        with open(filename, 'r', encoding='utf-8') as file:
-            for line in file:
-                if line.startswith("Link: "):
-                    url = line[len("Link: "):].strip()
-                    if url:
-                        existing_entries.add(url)
-    except FileNotFoundError:
-        pass
-    return existing_entries
-
+from utils import get_existing_entries
 
 
 class ArcRaidersNews:
@@ -31,7 +17,7 @@ class ArcRaidersNews:
         soup = BeautifulSoup(html, 'html.parser')
         articles = []
         for a in soup.find_all('a', class_='news-article-card_container__xsniv'):
-            href = a.get('href', '')
+            href = str(a.get('href', ''))
             if not href.startswith('/news/'):
                 continue
             title_div = a.find('div', class_='news-article-card_title__7LpPs')

@@ -3,25 +3,13 @@ import re
 from bs4 import BeautifulSoup
 from datetime import datetime
 from srcs import game_news_list
+from utils import get_existing_entries
 
 _DATE_PATTERN = re.compile(
     r'\b(January|February|March|April|May|June|July|August|September|October|November|December)'
     r'\s+\d{1,2},\s+\d{4}\b'
 )
 
-
-def get_existing_entries(filename='apex_news.txt'):
-    existing_entries = set()
-    try:
-        with open(filename, 'r', encoding='utf-8') as file:
-            for line in file:
-                if line.startswith("Link: "):
-                    url = line[len("Link: "):].strip()
-                    if url:
-                        existing_entries.add(url)
-    except FileNotFoundError:
-        pass
-    return existing_entries
 
 
 class ApexNews:
@@ -42,7 +30,7 @@ class ApexNews:
         articles = []
 
         for a in soup.find_all('a', href=True):
-            href = a.get('href', '')
+            href = str(a.get('href', ''))
             # Only process links that are actual article links (not the news index page)
             if not href or '/news/' not in href:
                 continue
@@ -55,7 +43,7 @@ class ApexNews:
                 continue
 
             # Extract date by searching for a "Month DD, YYYY" pattern in all text
-            full_text = a.get_text(' ')
+            full_text = a.get_text(separator=' ')
             match = _DATE_PATTERN.search(full_text)
             if not match:
                 continue

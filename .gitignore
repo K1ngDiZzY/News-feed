@@ -1,1 +1,66 @@
-PythonProject3/__pycache__/
+# Python
+News/__pycache__/
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# Environment / secrets
+.env
+*.env
+*.env.local
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Distribution / packaging
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+*.cover
+
+# IDE / Editor
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+$RECYCLE.BIN/
+
+# Logs
+*.log
+
+# Text / news feed outputs
+*.txt
+
+# Sensitive / unversioned data
+News/hacking_seen.json
+News/gamenews_seen.json
