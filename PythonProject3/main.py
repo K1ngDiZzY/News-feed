@@ -78,9 +78,14 @@ def main():
     print(f"Existing League entries: {league_existing_entries}")
 
     for article in league_news.news:
+        try:
+            article_date = datetime.strptime(article['date'], '%B %d, %Y').date()
+        except Exception as e:
+            print(f"Invalid or missing date format for League article: {article}")
+            continue
         article_key = article['link']
-        print(f"Checking League entry: (Title: {article['title']}, Date: {article.get('date', '')}, Link: {article_key})")
-        if article_key not in league_existing_entries:
+        print(f"Checking League entry: (Title: {article['title']}, Date: {article_date}, Link: {article_key})")
+        if article_date == today and article_key not in league_existing_entries:
             print(f"Sending League article to Discord: {article_key}")
             if SendToDiscord(webhook["leagueNews"], article):
                 league_existing_entries.add(article_key)
