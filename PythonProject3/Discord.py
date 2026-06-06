@@ -14,5 +14,7 @@ def SendToDiscord(webhook, entry):
     response = requests.post(webhook, json=data)
     if response.status_code != 204:
         print(f"Failed to send the message to Discord. Status code: {response.status_code}")
+        return False
     else:
         print("Message sent successfully to Discord!")
+        return True
