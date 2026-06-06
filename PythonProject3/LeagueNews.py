@@ -59,12 +59,17 @@ class LeagueNews:
         return articles
 
     def save_to_file(self, filename='league_news.txt'):
+        current_date = datetime.now().date()
         seen_entries = get_existing_entries(filename)
 
         with open(filename, 'a', encoding='utf-8') as f:
             for article in self.news:
+                try:
+                    article_date = datetime.strptime(article['date'], '%B %d, %Y').date()
+                except Exception:
+                    continue
                 article_key = article['link']
-                if article_key not in seen_entries:
+                if article_date == current_date and article_key not in seen_entries:
                     title = article['title'].replace('\n', ' ')
                     link = article['link']
                     date = article['date'].replace('\n', ' ')
