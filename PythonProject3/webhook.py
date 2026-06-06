@@ -9,7 +9,7 @@ load_dotenv()
 get_hackerNews = os.getenv("HACKERNEWS")
 get_devNews = os.getenv("DEVNEWS")
 get_arcRaiderNews = os.getenv("ARCRAIDERS")
-get_leagueNews = os.getenv("LEAGUEOFLEGENDS")
+get_leagueNews = os.getenv("LEAGUENEWS")
 get_apexNews = os.getenv("APEXLEGENDS")
 
 webhook = {

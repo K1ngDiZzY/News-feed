@@ -68,7 +68,6 @@ class LeagueNews:
                     article_date = datetime.strptime(article['date'], '%B %d, %Y').date()
                 except Exception:
                     continue
-
                 article_key = article['link']
                 if article_date == current_date and article_key not in seen_entries:
                     title = article['title'].replace('\n', ' ')
