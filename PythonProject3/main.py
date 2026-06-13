@@ -5,6 +5,7 @@ from datetime import datetime
 import requests
 
 from ApexNews import ApexNews, get_existing_entries as get_apex_existing_entries
+from DeadlockNews import DeadlockNews, get_existing_entries as get_deadlock_existing_entries
 from Discord import SendToDiscord
 from GamingNews import ArcRaidersNews, get_existing_entries as get_game_existing_entries
 from HackingNews import NewsFeed, get_existing_entries
@@ -117,6 +118,33 @@ def main():
             SendToDiscord(webhook["apexNews"], article)
 
     apex_news.save_to_file()
+
+    # --- Deadlock news section ---
+    deadlock_news = DeadlockNews()
+    try:
+        response = requests.get(deadlock_news.base_url, headers={'User-Agent': 'Mozilla/5.0'})
+        response.raise_for_status()
+        deadlock_news.get_news(response.text)
+    except Exception as e:
+        print(f"Failed to fetch Deadlock news: {e}")
+
+    deadlock_existing_entries = get_deadlock_existing_entries()
+    print(f"Existing Deadlock entries: {deadlock_existing_entries}")
+
+    for article in deadlock_news.news:
+        try:
+            article_date = datetime.strptime(article['date'], '%B %d, %Y').date()
+        except Exception as e:
+            print(f"Invalid or missing date format for Deadlock article: {article}")
+            continue
+        article_key = article['link']
+        print(f"Checking Deadlock entry: (Title: {article['title']}, Date: {article_date}, Link: {article_key})")
+        if article_date == today and article_key not in deadlock_existing_entries:
+            print(f"Sending Deadlock article to Discord: {article_key}")
+            if SendToDiscord(webhook["deadlockNews"], article):
+                deadlock_existing_entries.add(article_key)
+
+    deadlock_news.save_to_file()
 
 
 if __name__ == "__main__":

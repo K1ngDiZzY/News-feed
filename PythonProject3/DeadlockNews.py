@@ -1,0 +1,126 @@
+from __future__ import annotations
+
+import re
+from bs4 import BeautifulSoup
+from datetime import datetime
+from srcs import game_news_list
+
+_DATE_FORMATS = [
+    '%B %d, %Y',   # June 10, 2025
+    '%b %d, %Y',   # Jun 10, 2025
+    '%d %B, %Y',   # 10 June, 2025
+    '%d %b, %Y',   # 10 Jun, 2025
+]
+
+_DATE_PATTERN = re.compile(
+    r'\b(?:'
+    r'(?:January|February|March|April|May|June|July|August|September|October|November|December'
+    r'|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+    r'\s+\d{1,2},\s+\d{4}'
+    r'|\d{1,2}\s+'
+    r'(?:January|February|March|April|May|June|July|August|September|October|November|December'
+    r'|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)'
+    r',\s+\d{4})\b'
+)
+
+
+def _parse_date(raw: str) -> str:
+    """
+    Normalise a raw Steam date string to 'Month DD, YYYY' format.
+    Returns an empty string if parsing fails.
+    """
+    raw = ' '.join(raw.split())  # collapse extra whitespace
+    for fmt in _DATE_FORMATS:
+        try:
+            return datetime.strptime(raw, fmt).strftime('%B %d, %Y')
+        except ValueError:
+            continue
+    # Fall back to regex extraction
+    match = _DATE_PATTERN.search(raw)
+    if match:
+        snippet = match.group(0)
+        for fmt in _DATE_FORMATS:
+            try:
+                return datetime.strptime(snippet, fmt).strftime('%B %d, %Y')
+            except ValueError:
+                continue
+    return raw
+
+
+def get_existing_entries(filename='deadlock_news.txt'):
+    existing_entries = set()
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            for line in file:
+                if line.startswith("Link: "):
+                    url = line[len("Link: "):].strip()
+                    if url:
+                        existing_entries.add(url)
+    except FileNotFoundError:
+        pass
+    return existing_entries
+
+
+class DeadlockNews:
+    def __init__(self):
+        self.news = []
+        self.base_url = game_news_list['deadlock']
+
+    def get_news(self, html: str):
+        """
+        Extracts Deadlock news articles from the Steam app news page HTML.
+        Returns a list of dicts: { 'title': str, 'date': str, 'link': str }
+
+        Steam news pages wrap each article inside a
+        ``<div class="apphub_PostSummaryFull">`` block.  Within that block:
+        - The article link is carried by an ``<a>`` tag whose class contains
+          ``apphub_CardContentPreviewImageLink``.
+        - The title lives in ``<div class="apphub_CardContentTitle">``.
+        - The publication date lives in ``<div class="apphub_PostSummaryDate">``.
+        """
+        soup = BeautifulSoup(html, 'html.parser')
+        articles = []
+
+        for container in soup.find_all('div', class_='apphub_PostSummaryFull'):
+            link_tag = container.find('a', class_='apphub_CardContentPreviewImageLink')
+            href = link_tag.get('href', '').strip() if link_tag else ''
+
+            title_div = container.find('div', class_='apphub_CardContentTitle')
+            date_div = container.find('div', class_='apphub_PostSummaryDate')
+
+            title = title_div.get_text(strip=True) if title_div else ''
+            raw_date = date_div.get_text(strip=True) if date_div else ''
+            date = _parse_date(raw_date)
+
+            if not title or not href:
+                continue
+
+            link = href if href.startswith('http') else f"{self.base_url}{href}"
+            articles.append({'title': title, 'date': date, 'link': link})
+
+        self.news = articles
+        return articles
+
+    def save_to_file(self, filename='deadlock_news.txt'):
+        current_date = datetime.now().date()
+        seen_entries = get_existing_entries(filename)
+
+        with open(filename, 'a', encoding='utf-8') as f:
+            for article in self.news:
+                try:
+                    article_date = datetime.strptime(article['date'], '%B %d, %Y').date()
+                except Exception:
+                    continue
+                article_key = article['link']
+                if article_date == current_date and article_key not in seen_entries:
+                    title = article['title'].replace('\n', ' ')
+                    link = article['link']
+                    date = article['date'].replace('\n', ' ')
+                    f.write("DeadlockNews:\n")
+                    f.write(f"Title: {title}\n")
+                    f.write(f"Link: {link}\n")
+                    f.write(f"Date: {date}\n\n")
+                    seen_entries.add(article_key)
+
+
+__all__ = ['DeadlockNews', 'get_existing_entries']
