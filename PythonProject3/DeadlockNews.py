@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import re
-from bs4 import BeautifulSoup
 from datetime import datetime
+
+from bs4 import BeautifulSoup
+
 from srcs import game_news_list
+from utils import get_existing_entries
 
 _DATE_FORMATS = [
-    '%B %d, %Y',   # June 10, 2025
-    '%b %d, %Y',   # Jun 10, 2025
-    '%d %B, %Y',   # 10 June, 2025
-    '%d %b, %Y',   # 10 Jun, 2025
+    '%B %d, %Y',  # June 10, 2025
+    '%b %d, %Y',  # Jun 10, 2025
+    '%d %B, %Y',  # 10 June, 2025
+    '%d %b, %Y',  # 10 Jun, 2025
 ]
 
 _DATE_PATTERN = re.compile(
@@ -45,20 +48,6 @@ def _parse_date(raw: str) -> str:
             except ValueError:
                 continue
     return raw
-
-
-def get_existing_entries(filename='deadlock_news.txt'):
-    existing_entries = set()
-    try:
-        with open(filename, 'r', encoding='utf-8') as file:
-            for line in file:
-                if line.startswith("Link: "):
-                    url = line[len("Link: "):].strip()
-                    if url:
-                        existing_entries.add(url)
-    except FileNotFoundError:
-        pass
-    return existing_entries
 
 
 class DeadlockNews:
