@@ -29,7 +29,7 @@ _DATE_PATTERN = re.compile(
 
 def _parse_date(raw: str) -> str:
     """
-    Normalise a raw Steam date string to 'Month DD, YYYY' format.
+    Normalize a raw Steam date string to 'Month DD, YYYY' format.
     Returns an empty string if parsing fails.
     """
     raw = ' '.join(raw.split())  # collapse extra whitespace
