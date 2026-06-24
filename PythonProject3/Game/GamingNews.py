@@ -1,21 +1,10 @@
 from __future__ import annotations
+
 from bs4 import BeautifulSoup
-from srcs import game_news_list
 
-
-def get_existing_entries(filename='arc_raiders_news.txt'):
-    existing_entries = set()
-    try:
-        with open(filename, 'r', encoding='utf-8') as file:
-            for line in file:
-                if line.startswith("Link: "):
-                    url = line[len("Link: "):].strip()
-                    if url:
-                        existing_entries.add(url)
-    except FileNotFoundError:
-        pass
-    return existing_entries
-
+from PythonProject3.Source.srcs import game_news_list
+from PythonProject3.Helpers.utils import get_existing_entries
+from PythonProject3.Helpers.Discord import try_send
 
 
 class ArcRaidersNews:
@@ -44,11 +33,14 @@ class ArcRaidersNews:
         self.news = articles
         return articles
 
-    def save_to_file(self, filename='arc_raiders_news.txt'):
+    def save_to_file(self, filename='arc_raiders_news.txt', webhook=None):
         from datetime import datetime
         current_date = datetime.now().date()
 
         seen_entries = get_existing_entries(filename)
+        sent_count = 0
+        failed_count = 0
+
         with open(filename, 'a', encoding='utf-8') as f:  # Append mode
             for article in self.news:
                 # Parse date and only save today's entries
@@ -58,6 +50,11 @@ class ArcRaidersNews:
                     continue
                 article_key = article['link']
                 if article_date == current_date and article_key not in seen_entries:
+                    should_save, sent_count, failed_count = try_send(webhook, article, sent_count, failed_count)
+                    if not should_save:
+                        continue
+
+                    # Write to file only if Discord succeeded (or no webhook)
                     title = article['title'].replace('\n', ' ')
                     link = article['link']
                     date = article['date'].replace('\n', ' ')
@@ -65,6 +62,9 @@ class ArcRaidersNews:
                     f.write(f"Title: {title}\n")
                     f.write(f"Link: {link}\n")
                     f.write(f"Date: {date}\n\n")
+                    seen_entries.add(article_key)
+
+        return {"sent": sent_count, "failed": failed_count}
 
 
 __all__ = ['ArcRaidersNews', 'get_existing_entries']
