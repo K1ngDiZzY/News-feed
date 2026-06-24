@@ -5,8 +5,9 @@ from datetime import datetime
 
 from bs4 import BeautifulSoup
 
-from srcs import game_news_list
-from utils import get_existing_entries
+from PythonProject3.Source.srcs import game_news_list
+from PythonProject3.Helpers.utils import get_existing_entries
+from PythonProject3.Helpers.Discord import try_send
 
 _DATE_FORMATS = [
     '%B %d, %Y',  # June 10, 2025
@@ -90,9 +91,11 @@ class DeadlockNews:
         self.news = articles
         return articles
 
-    def save_to_file(self, filename='deadlock_news.txt'):
+    def save_to_file(self, filename='deadlock_news.txt', webhook=None):
         current_date = datetime.now().date()
         seen_entries = get_existing_entries(filename)
+        sent_count = 0
+        failed_count = 0
 
         with open(filename, 'a', encoding='utf-8') as f:
             for article in self.news:
@@ -102,6 +105,11 @@ class DeadlockNews:
                     continue
                 article_key = article['link']
                 if article_date == current_date and article_key not in seen_entries:
+                    should_save, sent_count, failed_count = try_send(webhook, article, sent_count, failed_count)
+                    if not should_save:
+                        continue
+
+                    # Write to file only if Discord succeeded (or no webhook)
                     title = article['title'].replace('\n', ' ')
                     link = article['link']
                     date = article['date'].replace('\n', ' ')
@@ -110,6 +118,8 @@ class DeadlockNews:
                     f.write(f"Link: {link}\n")
                     f.write(f"Date: {date}\n\n")
                     seen_entries.add(article_key)
+
+        return {"sent": sent_count, "failed": failed_count}
 
 
 __all__ = ['DeadlockNews', 'get_existing_entries']

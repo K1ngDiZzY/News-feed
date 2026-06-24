@@ -5,5 +5,5 @@ python-dotenv~=1.2.1
 schedule~=1.2.2
 django-scheduler~=0.12.0
 discord-webhook~=1.4.1
-beautifulsoup4~=4.14.3
+beautifulsoup4~=4.15.0
 python-dateutil~=2.9.0.post0
