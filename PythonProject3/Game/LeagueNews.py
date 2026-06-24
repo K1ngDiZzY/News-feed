@@ -4,8 +4,9 @@ from datetime import datetime
 
 from bs4 import BeautifulSoup
 
-from srcs import game_news_list
-from utils import get_existing_entries
+from PythonProject3.Source.srcs import game_news_list
+from PythonProject3.Helpers.utils import get_existing_entries
+from PythonProject3.Helpers.Discord import try_send
 
 
 class LeagueNews:
@@ -48,9 +49,11 @@ class LeagueNews:
         self.news = articles
         return articles
 
-    def save_to_file(self, filename='league_news.txt'):
+    def save_to_file(self, filename='league_news.txt', webhook=None):
         current_date = datetime.now().date()
         seen_entries = get_existing_entries(filename)
+        sent_count = 0
+        failed_count = 0
 
         with open(filename, 'a', encoding='utf-8') as f:
             for article in self.news:
@@ -60,6 +63,11 @@ class LeagueNews:
                     continue
                 article_key = article['link']
                 if article_date == current_date and article_key not in seen_entries:
+                    should_save, sent_count, failed_count = try_send(webhook, article, sent_count, failed_count)
+                    if not should_save:
+                        continue
+
+                    # Write to file only if Discord succeeded (or no webhook)
                     title = article['title'].replace('\n', ' ')
                     link = article['link']
                     date = article['date'].replace('\n', ' ')
@@ -68,6 +76,8 @@ class LeagueNews:
                     f.write(f"Link: {link}\n")
                     f.write(f"Date: {date}\n\n")
                     seen_entries.add(article_key)
+
+        return {"sent": sent_count, "failed": failed_count}
 
 
 __all__ = ['LeagueNews', 'get_existing_entries']
