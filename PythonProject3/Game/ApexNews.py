@@ -5,9 +5,9 @@ from datetime import datetime
 
 from bs4 import BeautifulSoup
 
-from PythonProject3.Source.srcs import game_news_list
-from PythonProject3.Helpers.utils import get_existing_entries
 from PythonProject3.Helpers.Discord import try_send
+from PythonProject3.Helpers.utils import get_existing_entries
+from PythonProject3.Source.srcs import game_news_list
 
 _DATE_PATTERN = re.compile(
     r'\b(January|February|March|April|May|June|July|August|September|October|November|December)'
@@ -52,6 +52,7 @@ class ApexNews:
                 continue
             date = match.group(0)
 
+            # pyrefly: ignore [missing-attribute]
             link = href if href.startswith('http') else f"{self.base_url}{href}"
             articles.append({'title': title, 'date': date, 'link': link})
 

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from bs4 import BeautifulSoup
 
-from PythonProject3.Source.srcs import game_news_list
-from PythonProject3.Helpers.utils import get_existing_entries
 from PythonProject3.Helpers.Discord import try_send
+from PythonProject3.Helpers.utils import get_existing_entries
+from PythonProject3.Source.srcs import game_news_list
 
 
 class ArcRaidersNews:
@@ -21,6 +21,7 @@ class ArcRaidersNews:
         articles = []
         for a in soup.find_all('a', class_='news-article-card_container__xsniv'):
             href = a.get('href', '')
+            # pyrefly: ignore [missing-attribute]
             if not href.startswith('/news/'):
                 continue
             title_div = a.find('div', class_='news-article-card_title__7LpPs')
@@ -28,6 +29,7 @@ class ArcRaidersNews:
             title = title_div.get_text(strip=True) if title_div else ''
             date = date_div.get_text(strip=True) if date_div else ''
             # Build full link
+            # pyrefly: ignore [missing-attribute]
             link = href if href.startswith('http') else f"{self.base_url}{href}"
             articles.append({'href': href, 'title': title, 'date': date, 'link': link})
         self.news = articles

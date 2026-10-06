@@ -4,9 +4,9 @@ from datetime import datetime
 
 from bs4 import BeautifulSoup
 
-from PythonProject3.Source.srcs import game_news_list
-from PythonProject3.Helpers.utils import get_existing_entries
 from PythonProject3.Helpers.Discord import try_send
+from PythonProject3.Helpers.utils import get_existing_entries
+from PythonProject3.Source.srcs import game_news_list
 
 
 class LeagueNews:
@@ -36,6 +36,7 @@ class LeagueNews:
             # Use ISO datetime attribute for reliable parsing
             if time_tag and time_tag.get('datetime'):
                 try:
+                    # pyrefly: ignore [missing-attribute]
                     date_obj = datetime.fromisoformat(time_tag['datetime'].replace('Z', '+00:00')).date()
                     date = date_obj.strftime('%B %d, %Y')  # e.g. "April 28, 2026"
                 except Exception:
@@ -43,6 +44,7 @@ class LeagueNews:
             else:
                 date = ''
 
+            # pyrefly: ignore [missing-attribute]
             link = href if href.startswith('http') else f"{self.base_url}{href}"
             articles.append({'title': title, 'date': date, 'link': link})
 
