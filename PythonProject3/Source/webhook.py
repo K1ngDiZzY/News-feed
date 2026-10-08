@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from dotenv import load_dotenv
 import os
+
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -12,6 +13,7 @@ get_arcRaiderNews = os.getenv("ARCRAIDERS")
 get_leagueNews = os.getenv("LEAGUENEWS")
 get_apexNews = os.getenv("APEXLEGENDS")
 get_deadlockNews = os.getenv("DEADLOCK")
+get_wardogsNews = os.getenv("WARDOGS")
 
 webhook = {
     'hackerNews': f"{get_hackerNews}",
@@ -19,5 +21,6 @@ webhook = {
     'arcRaiderNews': f"{get_arcRaiderNews}",
     'leagueNews': f"{get_leagueNews}",
     'apexNews': f"{get_apexNews}",
-    'deadlockNews': f"{get_deadlockNews}"
+    'deadlockNews': f"{get_deadlockNews}",
+    'wardogsNews': f"{get_wardogsNews}"
 }

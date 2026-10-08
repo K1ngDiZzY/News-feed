@@ -4,75 +4,83 @@ from datetime import datetime
 
 import requests
 
+from PythonProject3.Cyber.HackingNews import NewsFeed
 from PythonProject3.Game.ApexNews import ApexNews
 from PythonProject3.Game.DeadlockNews import DeadlockNews
 from PythonProject3.Game.GamingNews import ArcRaidersNews
 from PythonProject3.Game.LeagueNews import LeagueNews
-from PythonProject3.Cyber.HackingNews import NewsFeed
+from PythonProject3.Game.WardogsNews import WardogsNews
 from PythonProject3.Source.webhook import webhook
+
+
+def _safe_send(label: str, webhook_url: str | None, operation):
+    try:
+        result = operation(webhook=webhook_url)
+    except Exception as exc:
+        print(f"{label}: Failed to send news: {exc}")
+        return {"sent": 0, "failed": 1}
+
+    print(f"{label}: Sent {result['sent']}, Failed: {result['failed']}")
+    return result
 
 
 def main():
     news = NewsFeed()
 
-    # Get today's date
     today = datetime.now().date()
-
     print(f"Today's date: {today}")
 
-    # Send the news to the specific discord webhook hackernews
-    result = news.save_to_file(webhook=webhook["hackerNews"])
-    print(f"HackerNews: Sent {result['sent']}, Failed: {result['failed']}")
+    result = _safe_send("HackerNews", webhook.get("hackerNews"), news.save_to_file)
 
-    # --- Game news section ---
     game_news = ArcRaidersNews()
-    # Fetch HTML from the Arc Raiders news page
     try:
-        response = requests.get(f"{game_news.base_url}/news")
+        response = requests.get(f"{game_news.base_url}/news", timeout=15)
         response.raise_for_status()
-        html = response.text
-        game_news.get_news(html)
-    except Exception as e:
-        print(f"Failed to fetch game news: {e}")
+        game_news.get_news(response.text)
+    except Exception as exc:
+        print(f"Failed to fetch game news: {exc}")
 
-    result = game_news.save_to_file(webhook=webhook["arcRaiderNews"])
-    print(f"ArcRaiders: Sent {result['sent']}, Failed: {result['failed']}")
+    _safe_send("ArcRaiders", webhook.get("arcRaiderNews"), game_news.save_to_file)
 
-    # --- League of Legends patch notes section ---
     league_news = LeagueNews()
     try:
-        response = requests.get(league_news.feed_url)
+        response = requests.get(league_news.feed_url, timeout=15)
         response.raise_for_status()
         league_news.get_news(response.text)
-    except Exception as e:
-        print(f"Failed to fetch League news: {e}")
+    except Exception as exc:
+        print(f"Failed to fetch League news: {exc}")
 
-    result = league_news.save_to_file(webhook=webhook["leagueNews"])
-    print(f"League: Sent {result['sent']}, Failed: {result['failed']}")
+    _safe_send("League", webhook.get("leagueNews"), league_news.save_to_file)
 
-    # --- Apex Legends news section ---
     apex_news = ApexNews()
     try:
-        response = requests.get(apex_news.feed_url)
+        response = requests.get(apex_news.feed_url, timeout=15)
         response.raise_for_status()
         apex_news.get_news(response.text)
-    except Exception as e:
-        print(f"Failed to fetch Apex Legends news: {e}")
+    except Exception as exc:
+        print(f"Failed to fetch Apex Legends news: {exc}")
 
-    result = apex_news.save_to_file(webhook=webhook["apexNews"])
-    print(f"Apex: Sent {result['sent']}, Failed: {result['failed']}")
+    _safe_send("Apex", webhook.get("apexNews"), apex_news.save_to_file)
 
-    # --- Deadlock news section ---
     deadlock_news = DeadlockNews()
     try:
-        response = requests.get(deadlock_news.base_url, headers={'User-Agent': 'Mozilla/5.0'})
+        response = requests.get(deadlock_news.base_url, timeout=15, headers={'User-Agent': 'Mozilla/5.0'})
         response.raise_for_status()
         deadlock_news.get_news(response.text)
-    except Exception as e:
-        print(f"Failed to fetch Deadlock news: {e}")
+    except Exception as exc:
+        print(f"Failed to fetch Deadlock news: {exc}")
 
-    result = deadlock_news.save_to_file(webhook=webhook["deadlockNews"])
-    print(f"Deadlock: Sent {result['sent']}, Failed: {result['failed']}")
+    _safe_send("Deadlock", webhook.get("deadlockNews"), deadlock_news.save_to_file)
+
+    wardogs_news = WardogsNews()
+    try:
+        response = requests.get(wardogs_news.feed_url, timeout=15, headers={'User-Agent': 'Mozilla/5.0'})
+        response.raise_for_status()
+        wardogs_news.get_news(response.text)
+    except Exception as exc:
+        print(f"Failed to fetch WARDOGS news: {exc}")
+
+    _safe_send("WARDOGS", webhook.get("wardogsNews"), wardogs_news.save_to_file)
 
 
 if __name__ == "__main__":

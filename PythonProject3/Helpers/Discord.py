@@ -4,19 +4,33 @@ import requests
 
 
 def send_to_discord(webhook, entry):
+    if not webhook:
+        return True
+
     content = f"**{entry['title']}**\n{entry['link']}\nPublished on: {entry['date']}"
 
     data = {
         "content": content
     }
 
-    response = requests.post(webhook, json=data)
+    try:
+        response = requests.post(webhook, json=data, timeout=10)
+    except TypeError:
+        try:
+            response = requests.post(webhook, json=data)
+        except requests.RequestException as exc:
+            print(f"Failed to send the message to Discord: {exc}")
+            return False
+    except requests.RequestException as exc:
+        print(f"Failed to send the message to Discord: {exc}")
+        return False
+
     if response.status_code != 204:
         print(f"Failed to send the message to Discord. Status code: {response.status_code}")
         return False
-    else:
-        print("Message sent successfully to Discord!")
-        return True
+
+    print("Message sent successfully to Discord!")
+    return True
 
 
 def try_send(webhook, article, sent_count: int, failed_count: int) -> tuple[bool, int, int]:
@@ -32,7 +46,10 @@ def try_send(webhook, article, sent_count: int, failed_count: int) -> tuple[bool
     if not webhook:
         return True, sent_count, failed_count  # No webhook: allow saving, no send attempted
 
-    if send_to_discord(webhook, article):
-        return True, sent_count + 1, failed_count  # Success: save + increment sent
-    else:
+    try:
+        if send_to_discord(webhook, article):
+            return True, sent_count + 1, failed_count  # Success: save + increment sent
         return False, sent_count, failed_count + 1  # Failure: skip save + increment failed
+    except Exception as exc:
+        print(f"Discord send threw an unexpected error: {exc}")
+        return False, sent_count, failed_count + 1

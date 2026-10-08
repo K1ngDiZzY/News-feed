@@ -3,4 +3,9 @@ PythonProject3/__pycache__/
 *news.txt
 .env
 news.txt
-
+clear_news_files.bat
+run_news_feed.bat
+*.txt
+*.xml
+*.log
+session*

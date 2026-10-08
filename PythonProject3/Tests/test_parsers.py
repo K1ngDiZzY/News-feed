@@ -4,6 +4,7 @@ from PythonProject3.Game.ApexNews import ApexNews
 from PythonProject3.Game.DeadlockNews import DeadlockNews, _parse_date
 from PythonProject3.Game.GamingNews import ArcRaidersNews
 from PythonProject3.Game.LeagueNews import LeagueNews
+from PythonProject3.Game.WardogsNews import WardogsNews
 
 
 def test_arc_raiders_parser_extracts_news_cards():
@@ -84,6 +85,28 @@ def test_deadlock_parser_extracts_title_date_and_link():
     assert items[0]["title"] == "Hotfix"
     assert items[0]["date"] == "June 23, 2026"
     assert items[0]["link"].endswith("/view/123")
+
+
+def test_wardogs_parser_extracts_items_from_steam_rss():
+    xml = """
+    <rss version="2.0">
+      <channel>
+        <item>
+          <title>IR Goggles &amp; CIWS Balance Hotfix</title>
+          <link>https://store.steampowered.com/news/app/1867240/view/670629928317748295</link>
+          <pubDate>Fri, 02 Oct 2026 15:39:32 +0000</pubDate>
+        </item>
+      </channel>
+    </rss>
+    """
+
+    parser = WardogsNews()
+    items = parser.get_news(xml)
+
+    assert len(items) == 1
+    assert items[0]["title"] == "IR Goggles & CIWS Balance Hotfix"
+    assert items[0]["date"] == "October 02, 2026"
+    assert items[0]["link"] == "https://store.steampowered.com/news/app/1867240/view/670629928317748295"
 
 
 def test_parse_date_normalizes_supported_formats():

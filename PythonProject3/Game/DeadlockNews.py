@@ -110,7 +110,7 @@ class DeadlockNews:
         if not articles:
             try:
                 feed_url = self.base_url.replace('/news/app/', '/feeds/news/app/')
-                resp = requests.get(feed_url, timeout=10)
+                resp = requests.get(feed_url, timeout=20)
                 resp.raise_for_status()
                 # Prefer XML parser when available; fall back to HTML parser and suppress XML-as-HTML warning
                 try:
